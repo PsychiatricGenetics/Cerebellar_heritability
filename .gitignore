@@ -47,3 +47,14 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+*.csv
+*.RDS
+*.pdf
+*.png
+*.tsv
+data/01_familywise_combined.R
+data/02_familywise_qtim.R
+data/03_familywise_qtab.R
+data/03_familywise_qtab_kki.R
+data/cb.vols.txt
+*.pptx
