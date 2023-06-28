@@ -10,7 +10,7 @@ rm(list = ls())
 
 #### Model ####
 Saturated_covariate <- function(phenotype, twin.data) {
-  covariate <- c("Age", "Sex", "eTIVZ", "cohort")
+  covariate <- c("Sex", "Age", "eTIVZ")
   nc <- length(covariate)
   # OpenMx does not tolerate missing values for definition variables.
   # Recode any missing definition variables as -999
@@ -193,14 +193,14 @@ Saturated_covariate <- function(phenotype, twin.data) {
   
   # MODELS TO TEST HETEROGENIETY OF COVARIANCES
   # Constrain expected covs to be equal within zygosity
-  # H1c equated the covariances of MZ twins, and equated the covariance of same-sex DZ twins. Thus, the comparison between H1c and H0c tested for the presence of scalar sex limitation.
+  # H1c equated the covariances of MZ twins, and equated the covariance of same-sex DZ twins. Thus, the comparision between H1c and H0c tested for the presence of scalar sex limitation.
   CModel1 <- VModel5
   CModel1 <- omxSetParameters(CModel1, label = c("cMZF21", "cMZM21"), values = 0, newlabels = "cMZ")
   CModel1 <- omxSetParameters(CModel1, label = c("cDZF21", "cDZM21"), values = 0, newlabels = "cDZ21")
   CModel1Fit <- mxTryHard(CModel1, intervals = F, extraTries = 50)
   
   # Constrain expected covs to be equal across same and & opposite sex groups
-  # H2c equated the covariances of MZ twins, and the covariances of all DZ twins. The comparison H2c therefore tested for the presence of non scalar sex limitation.
+  # H2c equated the covariances of MZ twins, and the covariances of all DZ twins. The comparision H2c therefore tested for the presence of non scalar sex limitation.
   CModel2 <- CModel1
   CModel2 <- omxSetParameters(CModel2, label = c("cDZOS21", "cDZ21", "cSib"), values = 0, newlabels = "cDZ")
   CModel2Fit <- mxTryHard(CModel2, intervals = T, extraTries = 50)
@@ -238,17 +238,17 @@ Saturated_covariate <- function(phenotype, twin.data) {
   
   #########################################################################################
   # Test Covariates
+  # Drop Sex
+  noSex <- CModel2
+  noSex <- omxSetParameters(model = noSex, labels = "betaSex", free = FALSE, values = 0, name = "noSexModel")
+  noSexFit <- mxTryHard(noSex, extraTries = 100, intervals = F)
+  noSexSumm <- summary(noSexFit)
+  
   # Drop Age
   noAge <- CModel2
   noAge <- omxSetParameters(model = noAge, labels = "betaAge", free = FALSE, values = 0, name = "noAgeModel")
   noAgeFit <- mxTryHard(noAge, extraTries = 100, intervals = F)
   noAgeSumm <- summary(noAgeFit)
-  
-  # Drop Sex (0 = F, 1 = M)
-  noSex <- CModel2
-  noSex <- omxSetParameters(model = noSex, labels = "betaSex", free = FALSE, values = 0, name = "noSexModel")
-  noSexFit <- mxTryHard(noSex, extraTries = 100, intervals = F)
-  noSexSumm <- summary(noSexFit)
   
   # Drop eTIV
   noETIV <- CModel2
@@ -256,18 +256,11 @@ Saturated_covariate <- function(phenotype, twin.data) {
   noETIVFit <- mxTryHard(noETIV, extraTries = 100, intervals = F)
   noETIVSumm <- summary(noETIVFit)
   
-  # Drop Cohort
-  noCohort <- CModel2
-  noCohort <- omxSetParameters(model = noCohort, labels = "betacohort", free = FALSE, values = 0, name = "noCohortModel")
-  noCohortFit <- mxTryHard(noCohort, extraTries = 100, intervals = F)
-  noCohortSumm <- summary(noCohortFit)
-  
   # Model fitting
-  noAgeLRT <- mxCompare(CModel2Fit, noAgeFit)
   noSexLRT <- mxCompare(CModel2Fit, noSexFit)
+  noAgeLRT <- mxCompare(CModel2Fit, noAgeFit)
   noETIVLRT <- mxCompare(CModel2Fit, noETIVFit)
-  noCohortLRT <- mxCompare(CModel2Fit, noCohortFit)
-  
+
   # ACE or ADE model
   rMZ <- round(CModel2Fit$MZF$expCorMZF$result[2, 1],2)
   rDZ <- round(2*CModel2Fit$DZF$expCorDZF$result[2, 1],2)
@@ -293,14 +286,12 @@ Saturated_covariate <- function(phenotype, twin.data) {
     rMZ_95CI = paste0(sprintf("%.2f", round(CModel2Summ$CI$estimate[1], 2)), " (", sprintf("%.2f", round(CModel2Summ$CI$lbound[1], 2)), ", ", sprintf("%.2f", round(CModel2Summ$CI$ubound[1], 2)), ")"),
     rDZ_95CI = paste0(sprintf("%.2f", round(CModel2Summ$CI$estimate[2], 2)), " (", sprintf("%.2f", round(CModel2Summ$CI$lbound[2], 2)), ", ", sprintf("%.2f", round(CModel2Summ$CI$ubound[2], 2)), ")"),
     rTwin_model = model.select,
-    ageEstimate = CModel2Summ$parameters$Estimate[2],
-    sexEstimate = CModel2Summ$parameters$Estimate[3],
+    sexEstimate = CModel2Summ$parameters$Estimate[2],
+    ageEstimate = CModel2Summ$parameters$Estimate[3],
     eTIVEstimate = CModel2Summ$parameters$Estimate[4],
-    cohortEstimate = CModel2Summ$parameters$Estimate[5],
-    NoAge_pval = noAgeLRT$p[2],
     NoSex_pval = noSexLRT$p[2],
+    NoAge_pval = noAgeLRT$p[2],
     NoeTIV_pval = noETIVLRT$p[2],
-    NoCohort_pval = noCohortLRT$p[2],
     AIC_Sat = twinSatSumm$AIC.Mx,
     CODE_Sat = twinSatFit$output$status$code,
     H1m_pval = H1m$p[2],
@@ -324,14 +315,15 @@ Saturated_covariate <- function(phenotype, twin.data) {
 
 #### Run models ####
 setwd("C:/GitHub/Cerebellar_heritability")
+
 library(OpenMx)
 library(stringr)
 library(dplyr)
-twin.data <- readRDS("combined_cb_familywise.RDS")
 source("miFunctions.R")
+twin.data <- readRDS("qtim_cb_familywise.RDS")
 
 # Run for single phenotype
-Saturated_covariate(phenotype = "Right_Crus_IIZ", twin.data = twin.data)
+Saturated_covariate(phenotype = "Right_VIIBZ", twin.data = twin.data)
 
 # Run for list of phenotypes
 variable_list <- c("Left_I_III", "Right_I_III",
@@ -350,7 +342,7 @@ variable_list <- c("Left_I_III", "Right_I_III",
 variable_list <- paste0(variable_list, "Z")
 results.sat <- as_tibble(lapply(variable_list, Saturated_covariate, twin.data = twin.data) %>% bind_rows())
 
-# Assumption testing w/FDR adjustment
+# Assumption testing (sig after FDR adjustment)
 results.sat$H1m_pval_fdr <- p.adjust(p = results.sat$H1m_pval, method = "fdr")
 results.sat$H2m_pval_fdr <- p.adjust(p = results.sat$H2m_pval, method = "fdr")
 results.sat$H3m_pval_fdr <- p.adjust(p = results.sat$H3m_pval, method = "fdr")
@@ -386,14 +378,12 @@ select(results.sat %>% filter(H3c_pval_fdr < 0.05), c(Variable, H3c_pval_fdr, H3
 select(results.sat %>% filter(H4c_pval_fdr < 0.05), c(Variable, H4c_pval_fdr, H4c_pval))
 
 # Covariate effects (sig after FDR adjustment)
-results.sat$NoAge_pval_fdr <- p.adjust(p = results.sat$NoAge_pval, method = "fdr")
 results.sat$NoSex_pval_fdr <- p.adjust(p = results.sat$NoSex_pval, method = "fdr")
+results.sat$NoAge_pval_fdr <- p.adjust(p = results.sat$NoAge_pval, method = "fdr")
 results.sat$NoeTIV_pval_fdr <- p.adjust(p = results.sat$NoeTIV_pval, method = "fdr")
-results.sat$NoCohort_pval_fdr <- p.adjust(p = results.sat$NoCohort_pval, method = "fdr")
 
-select(results.sat %>% filter(NoAge_pval_fdr < 0.05), c(Variable, ageEstimate, NoAge_pval_fdr))
 select(results.sat %>% filter(NoSex_pval_fdr < 0.05), c(Variable, sexEstimate, NoSex_pval_fdr))
+select(results.sat %>% filter(NoAge_pval_fdr < 0.05), c(Variable, ageEstimate, NoAge_pval_fdr))
 select(results.sat %>% filter(NoeTIV_pval_fdr < 0.05), c(Variable, eTIVEstimate, NoeTIV_pval_fdr))
-select(results.sat %>% filter(NoCohort_pval_fdr < 0.05), c(Variable, cohortEstimate, NoCohort_pval_fdr))
 
-write.csv(results.sat, "combined_saturated_output.csv", row.names = F)
+write.csv(results.sat, "qtim_saturated_output.csv", row.names = F)
