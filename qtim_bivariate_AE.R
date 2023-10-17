@@ -136,7 +136,7 @@ Bivariate_AE <- function(phenotypes, twin.data){
   
   # Test rA significance
   dropRA <- mxModel( modelAE, name="no_rA" )
-  dropRA <- omxSetParameters( dropRV, labels="VA21", free=FALSE, values=0 )
+  dropRA <- omxSetParameters( dropRA, labels="VA21", free=FALSE, values=0 )
   fit_dropRA <- mxTryHard(dropRA, intervals = F, extraTries = 50)
   sum_dropRA <- summary(dropRA)
   # ------------------------------------------------------------------------------
