@@ -1,10 +1,10 @@
 # Lachlan T Strike
-# Direct estimates of variance components
+# Direct estimates of variance components (ACE)
 # Based on scripts shared by Hermine Maes (https://hermine-maes.squarespace.com)
 
 rm(list = ls())
 
-#### Models ####
+#### Model Specification ####
 Univariate_ACE <- function(phenotype, twin.data, covariate) {
   nc <- length(covariate)
   # OpenMx does not tolerate missing values for definition variables.
@@ -39,12 +39,11 @@ Univariate_ACE <- function(phenotype, twin.data, covariate) {
   svPa <- sqrt(var(c(twin.data[, paste0(phenotype, "_01")], twin.data[, paste0(phenotype, "_02")], twin.data[, paste0(phenotype, "_050")]), na.rm = T) / 3)
   svMe <- mean(unlist(twin.data[, selVars]), na.rm = T)
   
-  # ------------------------------------------------------------------------------
-  # PREPARE GENETIC MODEL
-  # ------------------------------------------------------------------------------
   # Create Matrices for Covariates and linear Regression Coefficients
-  defL <- mxMatrix(type = "Full", nrow = nc, ncol = ntv, free = F, labels = c(paste0("data.", covariate, "_01"), paste0("data.", covariate, "_02"), paste0("data.", covariate, "_050")), name = "defL")
-  pathBl <- mxMatrix(type = "Full", nrow = 1, ncol = nc, free = TRUE, values = 0.1, labels = c(paste0("beta", covariate)), name = "bl")
+  defL <- mxMatrix(type = "Full", nrow = nc, ncol = ntv, free = F,
+                   labels = c(paste0("data.", covariate, "_01"), paste0("data.", covariate, "_02"), paste0("data.", covariate, "_050")), name = "defL")
+  pathBl <- mxMatrix(type = "Full", nrow = 1, ncol = nc, free = TRUE, values = 0.1,
+                     labels = c(paste0("beta", covariate)), name = "bl")
   
   # Create Algebra for expected Mean Matrices
   meanG <- mxMatrix(type = "Full", nrow = 1, ncol = ntv, free = TRUE, values = svMe, label = "mean", name = "meanG")
@@ -94,7 +93,6 @@ Univariate_ACE <- function(phenotype, twin.data, covariate) {
   # Build Model with Confidence Intervals
   modelACE <- mxModel( "oneACEvca", pars, modelMZ, modelDZ, multi, estUS, ciACE )
   
-  # ------------------------------------------------------------------------------
   fitACE <- mxTryHard(modelACE, intervals = T, extraTries = 50)
   sumACE <- summary(fitACE)
   
@@ -120,7 +118,6 @@ Univariate_ACE <- function(phenotype, twin.data, covariate) {
   AW <- omxAkaikeWeights(models = list(fitACE, fitAE, fitCE, fitE))
   model.comparison <- mxCompare( fitACE, nested <- list(fitAE, fitCE, fitE))
   
-  #### Create results table ####
   Results <- data.frame(
     Variable = phenotype,
     ObservedStatistics = sumACE$observedStatistics,
@@ -152,7 +149,7 @@ Univariate_ACE <- function(phenotype, twin.data, covariate) {
   return(Results)
 }
 
-#### Run ####
+
 library(OpenMx)
 library(tidyverse)
 source("miFunctions.R")
@@ -181,4 +178,4 @@ phenotype.arrayZ <- paste0(phenotype.array, "Z")
 result.multiple <- lapply(phenotype.arrayZ, Univariate_ACE, twin.data = my.data, covariate = c("Sex", "Age", "eTIVZ", "cohort")) %>% bind_rows()
 result.multiple <- as_tibble(result.multiple)
 
-write.csv(result.multiple, "combined_univariate_ACE_output.csv", row.names = F)
+write.csv(result.multiple, "1a-combined_Univariate_ACE_output.csv", row.names = F)

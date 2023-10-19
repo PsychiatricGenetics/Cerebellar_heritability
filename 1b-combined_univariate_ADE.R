@@ -1,5 +1,5 @@
 # Lachlan T Strike
-# Direct estimates of variance components
+# Direct estimates of variance components (ADE)
 # Based on scripts provided by Hermine Maes (https://hermine-maes.squarespace.com)
 
 rm(list = ls())
