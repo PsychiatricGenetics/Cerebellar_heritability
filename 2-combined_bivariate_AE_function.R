@@ -1,3 +1,7 @@
+# Definition variables(covariates) are hard coded
+# OpenMx does not tolerate missing values for definition variables - recode any missing definition variables as -999
+# Script will stop if missing definition variables are found (but a phenotype value exists) - avoids using -999 as an actual covariate value
+
 Bivariate_AE <- function(phenotypes, twin.data){
   print(phenotypes)
   covariates = c("Age", "Sex", "eTIVZ", "cohort")

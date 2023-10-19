@@ -1,9 +1,8 @@
+# OpenMx does not tolerate missing values for definition variables - recode any missing definition variables as -999
+# Script will stop if missing definition variables are found (but a phenotype value exists) - avoids using -999 as an actual covariate value
+
 Univariate_ACDE <- function(phenotype, twin.data, covariate, CorD) {
   nc <- length(covariate)
-  # OpenMx does not tolerate missing values for definition variables.
-  # Recode any missing definition variables as -999
-  # BUT!!! Make sure there are not any cases of missing definition variables
-  # with a phenotype present
   for (x in covariate) {
     twin01.missing <- twin.data[, paste0(phenotype, "_01")][is.na(twin.data[, paste0(x, "_01")])]
     twin02.missing <- twin.data[, paste0(phenotype, "_02")][is.na(twin.data[, paste0(x, "_02")])]
