@@ -1,40 +1,32 @@
-# Lachlan T Strike
-# Direct estimates of variance components
-# Based on scripts shared by Hermine Maes (https://hermine-maes.squarespace.com)
-# Two twins
-
-rm(list=ls())
-
 Bivariate_AE <- function(phenotypes, twin.data){
   print(phenotypes)
   covariates = c("Age", "Sex", "eTIVZ")
   nc <- length(covariates)
-  # OpenMx does not tolerate missing values for definition variables.
-  # Recode any missing definition variables as -999
-  # BUT!!! Make sure there are not any cases of missing definition variables
-  # with a phenotype present
   for (y in phenotypes){
     for (x in covariates) {
       twin01.missing <- twin.data[, paste0(y, "_01")][is.na(twin.data[, paste0(x, "_01")])]
       twin02.missing <- twin.data[, paste0(y, "_02")][is.na(twin.data[, paste0(x, "_02")])]
+      twin050.missing <- twin.data[, paste0(y, "_050")][is.na(twin.data[, paste0(x, "_050")])]
       stopifnot(is.na(twin01.missing))
       stopifnot(is.na(twin02.missing))
+      stopifnot(is.na(twin050.missing))
       twin.data[, paste0(x, "_01")][is.na(twin.data[, paste0(x, "_01")])] <- -999
       twin.data[, paste0(x, "_02")][is.na(twin.data[, paste0(x, "_02")])] <- -999
+      twin.data[, paste0(x, "_050")][is.na(twin.data[, paste0(x, "_050")])] <- -999
     }
   }
   
   # Select variables
-  selVars <- c(paste0(phenotypes, "_01"), paste0(phenotypes, "_02"))
-  covVars <- c(paste0(covariates, "_01"), paste0(covariates, "_02"))
+  selVars <- c(paste0(phenotypes, "_01"), paste0(phenotypes, "_02"), paste0(phenotypes, "_050"))
+  covVars <- c(paste0(covariates, "_01"), paste0(covariates, "_02"), paste0(covariates, "_050"))
   nv <- length(phenotypes)
-  nt <- 2
+  nt <- 3
   ntv <- nv * nt
   
   # Covariate labels
-  ageLabels <- paste(rep(c("Age"), times=nt), rep(c(1,2), each=nv), sep="_0")
-  sexLabels <- paste(rep(c("Sex"), times=nt), rep(c(1,2), each=nv), sep="_0")
-  eTIVLabels <- paste(rep(c("eTIVZ"), times=nt), rep(c(1,2), each=nv), sep="_0")
+  ageLabels <- paste(rep(c("Age"), times=nt), rep(c(1,2,50), each=nv), sep="_0")
+  sexLabels <- paste(rep(c("Sex"), times=nt), rep(c(1,2,50), each=nv), sep="_0")
+  eTIVLabels <- paste(rep(c("eTIVZ"), times=nt), rep(c(1,2,50), each=nv), sep="_0")
   
   # Beta labels
   beta_age_mean_labels <- rep(paste0("beta_age_mean_coef_", 1:nv), times=nt)
@@ -78,12 +70,12 @@ Bivariate_AE <- function(phenotypes, twin.data){
   covP <- mxAlgebra( expression= VA+VE, name="V" ) 
   covMZ <- mxAlgebra( expression= VA, name="cMZ" )
   covDZ <- mxAlgebra( expression= 0.5%x%VA, name="cDZ" )
-  expCovMZ <- mxAlgebra( expression= rbind(cbind(V, cMZ), 
-                                           cbind(cMZ, V)),
-                                           name="expCovMZ" )
-  expCovDZ <- mxAlgebra( expression= rbind(cbind(V, cDZ),
-                                           cbind(cDZ, V)),
-                                           name="expCovDZ" )
+  expCovMZ <- mxAlgebra( expression= rbind(cbind(V, cMZ, cDZ), 
+                                           cbind(cMZ, V, cDZ),
+                                           cbind(cDZ, cDZ, V)), name="expCovMZ" )
+  expCovDZ <- mxAlgebra( expression= rbind(cbind(V, cDZ, cDZ),
+                                           cbind(cDZ, V, cDZ),
+                                           cbind(cDZ, cDZ, V)), name="expCovDZ" )
   
   # Create Data Objects for Multiple Groups
   dataMZ    <- mxData( observed=mzData, type="raw" )
@@ -109,7 +101,7 @@ Bivariate_AE <- function(phenotypes, twin.data){
   
   # Create Model Objects for Multiple Groups
   pars      <- list(covA, covE, covP, stVA, stVE)
-  modelMZ   <- mxModel( name="MZ", pars, mean, expMean, betaAge, defAge, betaSex, defSex, betaeTIV, defeTIV, covMZ, expCovMZ, dataMZ, expMZ, funML )
+  modelMZ   <- mxModel( name="MZ", pars, mean, expMean, betaAge, defAge, betaSex, defSex, betaeTIV, defeTIV, covMZ, covDZ, expCovMZ, dataMZ, expMZ, funML )
   modelDZ   <- mxModel( name="DZ", pars, mean, expMean, betaAge, defAge, betaSex, defSex, betaeTIV, defeTIV, covDZ, expCovDZ, dataDZ, expDZ, funML )
   multi     <- mxFitFunctionMultigroup( c("MZ","DZ") )
   
@@ -146,7 +138,7 @@ Bivariate_AE <- function(phenotypes, twin.data){
   # ------------------------------------------------------------------------------
   
   model.comparison <- mxCompare( fitAE, nested <- list(fit_dropRV, fit_dropRA, fit_dropRE))
- 
+  
   #### Create results table ####
   Results <- data.frame(
     Variable = paste0(phenotypes[1], "_corr_", phenotypes[2]),
@@ -161,32 +153,6 @@ Bivariate_AE <- function(phenotypes, twin.data){
     AE_rV_sig = model.comparison$p[2],
     AE_rA_sig = model.comparison$p[3],
     AE_rE_sig = model.comparison$p[4],
-    stringsAsFactors = F
-  )
-  
+    stringsAsFactors = F)
   return(Results)
-}
-
-setwd("C:/GitHub/Cerebellar_heritability")
-library(OpenMx)
-library(tidyverse)
-source("miFunctions.R")
-
-my.data <- readRDS("data/qtab_cb_familywise.RDS")
-Bivariate_AE(phenotypes = c("Left_Crus_IZ", "Corpus_MedullareZ"), twin.data = my.data)
-
-#### Run all pairwise correlations ####
-list1 <- c("Left_I_IIIZ", "Right_I_IIIZ", "Left_IVZ", "Right_IVZ", "Left_VZ", 
-           "Right_VZ", "Left_VIZ",  "Right_VIZ", "Left_Crus_IZ", "Right_Crus_IZ",
-           "Left_Crus_IIZ", "Right_Crus_IIZ", "Left_VIIBZ", "Right_VIIBZ", "Left_VIIIAZ", 
-           "Right_VIIIAZ", "Left_VIIIBZ", "Right_VIIIBZ", "Left_IXZ", "Right_IXZ", 
-           "Left_XZ", "Right_XZ", "Vermis_VIZ", "Vermis_VIIZ", "Vermis_VIIIZ",
-           "Vermis_IXZ", "Vermis_XZ", "Corpus_MedullareZ", "Total_Cerebel_VolZ")
-
-for (i in list1[1:29]){
-  list2 <- list1[!list1==i]
-  cb.vars1 <- crossing(i, list2)
-  cb.vars2 <- as.list(as.data.frame(t(cb.vars1)))
-  results <- lapply(cb.vars2, Bivariate_AE, twin.data = my.data) %>% bind_rows()
-  write.csv(results, paste0("qtab_bivariate_AE_", i, "_output.csv"), row.names = F)
 }

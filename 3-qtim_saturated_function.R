@@ -1,21 +1,10 @@
-# Lachlan T Strike
-# Saturated model used to check assumptions of twin data. Is setup for five zygosity groups, with opposite sex twin pairs coded M = 1, F = 0.
-# Take rMZ/DZ & covariate estimates from model with equated means/variances, but separate covariances for MZ and DZ (i.e. CModel2)
-# Sex - 1 = male, 0 = female
-# Expects phenotype data to be Z-score, with "Z" appended to the end of the variable name (if not, comment out 'Get raw means & sd for table' section)
-# Includes one singleton sibling of twins
-# Based on scripts shared by Hermine Maes (https://hermine-maes.squarespace.com)
+# Definition variables(covariates) are hard coded
+# OpenMx does not tolerate missing values for definition variables - recode any missing definition variables as -999
+# Script will stop if missing definition variable/s with a phenotype present are found
 
-rm(list = ls())
-
-#### Model ####
 Saturated_covariate <- function(phenotype, twin.data) {
   covariate <- c("Sex", "Age", "eTIVZ")
   nc <- length(covariate)
-  # OpenMx does not tolerate missing values for definition variables.
-  # Recode any missing definition variables as -999
-  # BUT!!! Make sure there are not any cases of missing definition variables
-  # with a phenotype present
   for (x in covariate) {
     twin01.missing <- twin.data[, paste0(phenotype, "_01")][is.na(twin.data[, paste0(x, "_01")])]
     twin02.missing <- twin.data[, paste0(phenotype, "_02")][is.na(twin.data[, paste0(x, "_02")])]
@@ -54,9 +43,6 @@ Saturated_covariate <- function(phenotype, twin.data) {
   mean.val <- mean(unlist(twin.data[, c(selVars.3[1], selVars.3[2], selVars.3[3])]), na.rm = T)
   sd.val <- sd(unlist(twin.data[, c(selVars.3[1], selVars.3[2], selVars.3[3])]), na.rm = T)
   
-  # ------------------------------------------------------------------------------
-  # PREPARE MODEL
-  # Saturated Model
   # Create Matrices for Covariates and Linear Regression Coefficients
   defMZF <- mxMatrix(type = "Full", nrow = nc, ncol = ntv, free = F, labels = c(paste0("data.", covariate, "_01"), paste0("data.", covariate, "_02"), paste0("data.", covariate, "_050")), name = "defMZF")
   defMZM <- mxMatrix(type = "Full", nrow = nc, ncol = ntv, free = F, labels = c(paste0("data.", covariate, "_01"), paste0("data.", covariate, "_02"), paste0("data.", covariate, "_050")), name = "defMZM")
@@ -159,7 +145,6 @@ Saturated_covariate <- function(phenotype, twin.data) {
   MModel5 <- omxSetParameters(MModel5, label = c("mTwin", "mSib"), newlabels = "m")
   MModel5Fit <- mxTryHard(MModel5, intervals = F, extraTries = 50)
   
-  #################################################################################################
   # MODELS TO TEST HETEROGENIETY OF VARIANCES
   # Constrain expected Variances to be equal across twin order
   VModel1 <- MModel5
@@ -193,21 +178,18 @@ Saturated_covariate <- function(phenotype, twin.data) {
   
   # MODELS TO TEST HETEROGENIETY OF COVARIANCES
   # Constrain expected covs to be equal within zygosity
-  # H1c equated the covariances of MZ twins, and equated the covariance of same-sex DZ twins. Thus, the comparision between H1c and H0c tested for the presence of scalar sex limitation.
   CModel1 <- VModel5
   CModel1 <- omxSetParameters(CModel1, label = c("cMZF21", "cMZM21"), values = 0, newlabels = "cMZ")
   CModel1 <- omxSetParameters(CModel1, label = c("cDZF21", "cDZM21"), values = 0, newlabels = "cDZ21")
   CModel1Fit <- mxTryHard(CModel1, intervals = F, extraTries = 50)
   
   # Constrain expected covs to be equal across same and & opposite sex groups
-  # H2c equated the covariances of MZ twins, and the covariances of all DZ twins. The comparision H2c therefore tested for the presence of non scalar sex limitation.
   CModel2 <- CModel1
   CModel2 <- omxSetParameters(CModel2, label = c("cDZOS21", "cDZ21", "cSib"), values = 0, newlabels = "cDZ")
   CModel2Fit <- mxTryHard(CModel2, intervals = T, extraTries = 50)
   CModel2Summ <- summary(CModel2Fit)
   
   # Constrain expected covs to be equal between MZ and DZ groups
-  # H3c equated all covariances The comparison tested whether variance on a trait was influenced by genetic factors.
   CModel3 <- CModel2
   CModel3 <- omxSetParameters(CModel3, label = c("cMZ", "cDZ"), values = 0, newlabels = "c")
   CModel3Fit <- mxTryHard(CModel3, intervals = F, extraTries = 50)
@@ -312,78 +294,3 @@ Saturated_covariate <- function(phenotype, twin.data) {
   )
   return(Results)
 }
-
-#### Run models ####
-setwd("C:/GitHub/Cerebellar_heritability")
-
-library(OpenMx)
-library(stringr)
-library(dplyr)
-source("miFunctions.R")
-twin.data <- readRDS("qtim_cb_familywise.RDS")
-
-# Run for single phenotype
-Saturated_covariate(phenotype = "Right_VIIBZ", twin.data = twin.data)
-
-# Run for list of phenotypes
-variable_list <- c("Left_I_III", "Right_I_III",
-                   "Left_IV", "Right_IV",
-                   "Left_V", "Right_V",
-                   "Left_VI", "Right_VI",
-                   "Left_Crus_I", "Right_Crus_I",
-                   "Left_Crus_II", "Right_Crus_II",
-                   "Left_VIIB", "Right_VIIB",
-                   "Left_VIIIA", "Right_VIIIA",
-                   "Left_VIIIB", "Right_VIIIB",
-                   "Left_IX", "Right_IX",
-                   "Left_X",  "Right_X",
-                   "Vermis_VI", "Vermis_VII", "Vermis_VIII", "Vermis_IX", "Vermis_X",
-                   "Corpus_Medullare", "Total_Cerebel_Vol")
-variable_list <- paste0(variable_list, "Z")
-results.sat <- as_tibble(lapply(variable_list, Saturated_covariate, twin.data = twin.data) %>% bind_rows())
-
-# Assumption testing (sig after FDR adjustment)
-results.sat$H1m_pval_fdr <- p.adjust(p = results.sat$H1m_pval, method = "fdr")
-results.sat$H2m_pval_fdr <- p.adjust(p = results.sat$H2m_pval, method = "fdr")
-results.sat$H3m_pval_fdr <- p.adjust(p = results.sat$H3m_pval, method = "fdr")
-results.sat$H4m_pval_fdr <- p.adjust(p = results.sat$H4m_pval, method = "fdr")
-results.sat$H5m_pval_fdr <- p.adjust(p = results.sat$H5m_pval, method = "fdr")
-
-results.sat$H1v_pval_fdr <- p.adjust(p = results.sat$H1v_pval, method = "fdr")
-results.sat$H2v_pval_fdr <- p.adjust(p = results.sat$H2v_pval, method = "fdr")
-results.sat$H3v_pval_fdr <- p.adjust(p = results.sat$H3v_pval, method = "fdr")
-results.sat$H4v_pval_fdr <- p.adjust(p = results.sat$H4v_pval, method = "fdr")
-results.sat$H5v_pval_fdr <- p.adjust(p = results.sat$H5v_pval, method = "fdr")
-
-results.sat$H1c_pval_fdr <- p.adjust(p = results.sat$H1c_pval, method = "fdr")
-results.sat$H2c_pval_fdr <- p.adjust(p = results.sat$H2c_pval, method = "fdr")
-results.sat$H3c_pval_fdr <- p.adjust(p = results.sat$H3c_pval, method = "fdr")
-results.sat$H4c_pval_fdr <- p.adjust(p = results.sat$H4c_pval, method = "fdr")
-
-select(results.sat %>% filter(H1m_pval_fdr < 0.05), c(Variable, H1m_pval_fdr, H1m_pval))
-select(results.sat %>% filter(H2m_pval_fdr < 0.05), c(Variable, H2m_pval_fdr, H2m_pval))
-select(results.sat %>% filter(H3m_pval_fdr < 0.05), c(Variable, H3m_pval_fdr, H3m_pval))
-select(results.sat %>% filter(H4m_pval_fdr < 0.05), c(Variable, H4m_pval_fdr, H4m_pval))
-select(results.sat %>% filter(H5m_pval_fdr < 0.05), c(Variable, H5m_pval_fdr, H5m_pval))
-
-select(results.sat %>% filter(H1v_pval_fdr < 0.05), c(Variable, H1v_pval_fdr, H1v_pval))
-select(results.sat %>% filter(H2v_pval_fdr < 0.05), c(Variable, H2v_pval_fdr, H2v_pval))
-select(results.sat %>% filter(H3v_pval_fdr < 0.05), c(Variable, H3v_pval_fdr, H3v_pval))
-select(results.sat %>% filter(H4v_pval_fdr < 0.05), c(Variable, H4v_pval_fdr, H4v_pval))
-select(results.sat %>% filter(H5v_pval_fdr < 0.05), c(Variable, H5v_pval_fdr, H5v_pval))
-
-select(results.sat %>% filter(H1c_pval_fdr < 0.05), c(Variable, H1c_pval_fdr, H1c_pval))
-select(results.sat %>% filter(H2c_pval_fdr < 0.05), c(Variable, H2c_pval_fdr, H2c_pval))
-select(results.sat %>% filter(H3c_pval_fdr < 0.05), c(Variable, H3c_pval_fdr, H3c_pval))
-select(results.sat %>% filter(H4c_pval_fdr < 0.05), c(Variable, H4c_pval_fdr, H4c_pval))
-
-# Covariate effects (sig after FDR adjustment)
-results.sat$NoSex_pval_fdr <- p.adjust(p = results.sat$NoSex_pval, method = "fdr")
-results.sat$NoAge_pval_fdr <- p.adjust(p = results.sat$NoAge_pval, method = "fdr")
-results.sat$NoeTIV_pval_fdr <- p.adjust(p = results.sat$NoeTIV_pval, method = "fdr")
-
-select(results.sat %>% filter(NoSex_pval_fdr < 0.05), c(Variable, sexEstimate, NoSex_pval_fdr))
-select(results.sat %>% filter(NoAge_pval_fdr < 0.05), c(Variable, ageEstimate, NoAge_pval_fdr))
-select(results.sat %>% filter(NoeTIV_pval_fdr < 0.05), c(Variable, eTIVEstimate, NoeTIV_pval_fdr))
-
-write.csv(results.sat, "qtim_saturated_output.csv", row.names = F)
