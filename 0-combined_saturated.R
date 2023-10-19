@@ -8,14 +8,13 @@
 
 rm(list = ls())
 
-#### Model ####
-Saturated_covariate <- function(phenotype, twin.data) {
+#### Model Specification ####
+saturated_covariate <- function(phenotype, twin.data) {
   covariate <- c("Age", "Sex", "eTIVZ", "cohort")
   nc <- length(covariate)
   # OpenMx does not tolerate missing values for definition variables.
   # Recode any missing definition variables as -999
-  # BUT!!! Make sure there are not any cases of missing definition variables
-  # with a phenotype present
+  # BUT!!! Make sure there are not any cases of missing definition variables with a phenotype present
   for (x in covariate) {
     twin01.missing <- twin.data[, paste0(phenotype, "_01")][is.na(twin.data[, paste0(x, "_01")])]
     twin02.missing <- twin.data[, paste0(phenotype, "_02")][is.na(twin.data[, paste0(x, "_02")])]
@@ -54,9 +53,6 @@ Saturated_covariate <- function(phenotype, twin.data) {
   mean.val <- mean(unlist(twin.data[, c(selVars.3[1], selVars.3[2], selVars.3[3])]), na.rm = T)
   sd.val <- sd(unlist(twin.data[, c(selVars.3[1], selVars.3[2], selVars.3[3])]), na.rm = T)
   
-  # ------------------------------------------------------------------------------
-  # PREPARE MODEL
-  # Saturated Model
   # Create Matrices for Covariates and Linear Regression Coefficients
   defMZF <- mxMatrix(type = "Full", nrow = nc, ncol = ntv, free = F, labels = c(paste0("data.", covariate, "_01"), paste0("data.", covariate, "_02"), paste0("data.", covariate, "_050")), name = "defMZF")
   defMZM <- mxMatrix(type = "Full", nrow = nc, ncol = ntv, free = F, labels = c(paste0("data.", covariate, "_01"), paste0("data.", covariate, "_02"), paste0("data.", covariate, "_050")), name = "defMZM")
@@ -127,7 +123,6 @@ Saturated_covariate <- function(phenotype, twin.data) {
   twinSatFit <- mxTryHard(twinSatModel, intervals = T, extraTries = 100)
   twinSatSumm <- summary(twinSatFit)
   
-  #### Sub-models ####
   # MODELS TO TEST HETEROGENIETY OF MEANS
   # Constrain expected Means to be equal across twin order
   MModel1 <- twinSatModel
@@ -159,7 +154,6 @@ Saturated_covariate <- function(phenotype, twin.data) {
   MModel5 <- omxSetParameters(MModel5, label = c("mTwin", "mSib"), newlabels = "m")
   MModel5Fit <- mxTryHard(MModel5, intervals = F, extraTries = 50)
   
-  #################################################################################################
   # MODELS TO TEST HETEROGENIETY OF VARIANCES
   # Constrain expected Variances to be equal across twin order
   VModel1 <- MModel5
@@ -236,7 +230,6 @@ Saturated_covariate <- function(phenotype, twin.data) {
   H3c <- mxCompare(CModel2Fit, CModel3Fit)
   H4c <- mxCompare(CModel3Fit, CModel4Fit)
   
-  #########################################################################################
   # Test Covariates
   # Drop Age
   noAge <- CModel2
@@ -322,16 +315,16 @@ Saturated_covariate <- function(phenotype, twin.data) {
   return(Results)
 }
 
-#### Run models ####
+#### Model Run ####
 setwd("C:/GitHub/Cerebellar_heritability")
 library(OpenMx)
 library(stringr)
 library(dplyr)
-twin.data <- readRDS("combined_cb_familywise.RDS")
+twin.data <- readRDS("data/combined_cb_familywise.RDS")
 source("miFunctions.R")
 
 # Run for single phenotype
-Saturated_covariate(phenotype = "Right_Crus_IIZ", twin.data = twin.data)
+saturated_covariate(phenotype = "Right_Crus_IIZ", twin.data = twin.data)
 
 # Run for list of phenotypes
 variable_list <- c("Left_I_III", "Right_I_III",
@@ -348,7 +341,7 @@ variable_list <- c("Left_I_III", "Right_I_III",
                    "Vermis_VI", "Vermis_VII", "Vermis_VIII", "Vermis_IX", "Vermis_X",
                    "Corpus_Medullare", "Total_Cerebel_Vol")
 variable_list <- paste0(variable_list, "Z")
-results.sat <- as_tibble(lapply(variable_list, Saturated_covariate, twin.data = twin.data) %>% bind_rows())
+results.sat <- as_tibble(lapply(variable_list, saturated_covariate, twin.data = twin.data) %>% bind_rows())
 
 # Assumption testing w/FDR adjustment
 results.sat$H1m_pval_fdr <- p.adjust(p = results.sat$H1m_pval, method = "fdr")
@@ -396,4 +389,4 @@ select(results.sat %>% filter(NoSex_pval_fdr < 0.05), c(Variable, sexEstimate, N
 select(results.sat %>% filter(NoeTIV_pval_fdr < 0.05), c(Variable, eTIVEstimate, NoeTIV_pval_fdr))
 select(results.sat %>% filter(NoCohort_pval_fdr < 0.05), c(Variable, cohortEstimate, NoCohort_pval_fdr))
 
-write.csv(results.sat, "combined_saturated_output.csv", row.names = F)
+write.csv(results.sat, "0-combined_saturated_output.csv", row.names = F)
