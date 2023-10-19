@@ -40,9 +40,6 @@ Univariate_ADE <- function(phenotype, twin.data, covariate) {
   svPa <- sqrt(var(c(twin.data[, paste0(phenotype, "_01")], twin.data[, paste0(phenotype, "_02")], twin.data[, paste0(phenotype, "_050")]), na.rm = T) / 3)
   svMe <- mean(unlist(twin.data[, selVars]), na.rm = T)
   
-  # ------------------------------------------------------------------------------
-  # PREPARE GENETIC MODEL
-  # ------------------------------------------------------------------------------
   # Create Matrices for Covariates and linear Regression Coefficients
   defL <- mxMatrix(type = "Full", nrow = nc, ncol = ntv, free = F, labels = c(paste0("data.", covariate, "_01"), paste0("data.", covariate, "_02"), paste0("data.", covariate, "_050")), name = "defL")
   pathBl <- mxMatrix(type = "Full", nrow = 1, ncol = nc, free = TRUE, values = 0.1, labels = c(paste0("beta", covariate)), name = "bl")

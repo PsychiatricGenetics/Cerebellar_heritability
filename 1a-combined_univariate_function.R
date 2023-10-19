@@ -1,11 +1,5 @@
-# Lachlan T Strike
-# Direct estimates of variance components (ACE)
-# Based on scripts shared by Hermine Maes (https://hermine-maes.squarespace.com)
-
-rm(list = ls())
-
-#### Model Specification ####
-Univariate_ACE <- function(phenotype, twin.data, covariate) {
+Univariate_ACDE <- function(phenotype, twin.data, covariate, CorD) {
+  
   nc <- length(covariate)
   # OpenMx does not tolerate missing values for definition variables.
   # Recode any missing definition variables as -999
@@ -50,21 +44,25 @@ Univariate_ACE <- function(phenotype, twin.data, covariate) {
   expMean <- mxAlgebra(expression = meanG + bl %*% defL, name = "expMeanG")
   
   # Create Matrices for Variance Components
-  covA <- mxMatrix( type="Symm", nrow=nv, ncol=nv, free=TRUE, values=svPa, label="VA11", name="VA" )
-  covC <- mxMatrix( type="Symm", nrow=nv, ncol=nv, free=TRUE, values=svPa, label="VC11", name="VC" )
-  covE <- mxMatrix( type="Symm", nrow=nv, ncol=nv, free=TRUE, values=svPa, label="VE11", name="VE" )
+  covA <- mxMatrix(type="Symm", nrow=nv, ncol=nv, free=TRUE, values=svPa, label="VA11", name="VA")
+  covC <- mxMatrix(type="Symm", nrow=nv, ncol=nv, free=TRUE, values=svPa, label="VC11", name="VC")
+  covE <- mxMatrix(type="Symm", nrow=nv, ncol=nv, free=TRUE, values=svPa, label="VE11", name="VE")
   
   # Create Algebra for expected Variance/Covariance Matrices in MZ & DZ twins
-  covP <- mxAlgebra( expression= VA+VC+VE, name="V" )
-  covMZ <- mxAlgebra( expression= VA+VC, name="cMZ" )
-  covDZ <- mxAlgebra( expression= 0.5%x%VA+VC, name="cDZ" )
-  
+  covP <- mxAlgebra(expression= VA+VC+VE, name="V")
+  covMZ <- mxAlgebra(expression= VA+VC, name="cMZ")
+    if (CorD=="C") {
+    covDZ <- mxAlgebra( expression= 0.5%x%VA+VC, name="cDZ")
+  } else if (CorD=="D") {
+    covDZ <- mxAlgebra( expression= 0.5%x%VA + 0.25%x%VC, name="cDZ")
+  }
+
   expCovMZ <- mxAlgebra( expression= rbind(cbind(V, cMZ, cDZ), 
                                            cbind(cMZ, V, cDZ),
-                                           cbind(cDZ, cDZ, V)), name="expCovMZ" )
+                                           cbind(cDZ, cDZ, V)), name="expCovMZ")
   expCovDZ <- mxAlgebra( expression= rbind(cbind(V, cDZ, cDZ),
                                            cbind(cDZ, V, cDZ),
-                                           cbind(cDZ, cDZ, V)), name="expCovDZ" )
+                                           cbind(cDZ, cDZ, V)), name="expCovDZ")
   
   # Create Data Objects for Multiple Groups
   dataMZ <- mxData( observed=mzData, type="raw" )
@@ -149,33 +147,3 @@ Univariate_ACE <- function(phenotype, twin.data, covariate) {
   return(Results)
 }
 
-
-library(OpenMx)
-library(tidyverse)
-source("miFunctions.R")
-setwd("C:/GitHub/Cerebellar_heritability")
-my.data <- readRDS("data/combined_cb_familywise.RDS")
-
-# Single phenotype
-result.single <- as_tibble(Univariate_ACE(phenotype = "Right_VIZ", twin.data = my.data, covariate = c("Sex", "Age", "eTIVZ", "cohort")))
-result.single %>% select(Variable, AIC_BestFit, ACE_A_95CI, ACE_C_95CI, ACE_E_95CI, ACE_VA, ACE_VC, ACE_VE, AE_A_95CI, AE_E_95CI, AE_A, AE_E)
-
-# Phenotype array
-phenotype.array <- c("Left_I_III", "Right_I_III",
-                     "Left_IV", "Right_IV",
-                     "Left_V", "Right_V",
-                     "Left_VI", "Right_VI",
-                     "Left_Crus_I", "Right_Crus_I",
-                     "Left_Crus_II", "Right_Crus_II",
-                     "Left_VIIB", "Right_VIIB",
-                     "Left_VIIIA", "Right_VIIIA",
-                     "Left_VIIIB", "Right_VIIIB",
-                     "Left_IX", "Right_IX",
-                     "Left_X",  "Right_X",
-                     "Vermis_VI", "Vermis_VII", "Vermis_VIII", "Vermis_IX", "Vermis_X",
-                     "Corpus_Medullare", "Total_Cerebel_Vol")
-phenotype.arrayZ <- paste0(phenotype.array, "Z")
-result.multiple <- lapply(phenotype.arrayZ, Univariate_ACE, twin.data = my.data, covariate = c("Sex", "Age", "eTIVZ", "cohort")) %>% bind_rows()
-result.multiple <- as_tibble(result.multiple)
-
-write.csv(result.multiple, "1a-combined_Univariate_ACE_output.csv", row.names = F)
