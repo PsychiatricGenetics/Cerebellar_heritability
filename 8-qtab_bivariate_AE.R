@@ -9,7 +9,7 @@ setwd("C:/GitHub/Cerebellar_heritability")
 library(OpenMx)
 library(tidyverse)
 source("miFunctions.R")
-source("8-qtab_bivariate_AE_.R")
+source("8-qtab_bivariate_AE_function.R")
 
 my.data <- readRDS("data/qtab_cb_familywise.RDS")
 Bivariate_AE(phenotypes = c("Left_Crus_IZ", "Corpus_MedullareZ"), twin.data = my.data)
@@ -22,7 +22,7 @@ list1 <- c("Left_I_IIIZ", "Right_I_IIIZ", "Left_IVZ", "Right_IVZ", "Left_VZ",
            "Left_XZ", "Right_XZ", "Vermis_VIZ", "Vermis_VIIZ", "Vermis_VIIIZ",
            "Vermis_IXZ", "Vermis_XZ", "Corpus_MedullareZ", "Total_Cerebel_VolZ")
 
-for (i in list1[1:29]){
+for (i in list1){
   list2 <- list1[!list1==i]
   cb.vars1 <- crossing(i, list2)
   cb.vars2 <- as.list(as.data.frame(t(cb.vars1)))
