@@ -37,48 +37,24 @@ variable_list <- c("Left_I_III", "Right_I_III",
 variable_list <- paste0(variable_list, "Z")
 results.sat <- as_tibble(lapply(variable_list, Saturated_covariate, twin.data = twin.data) %>% bind_rows())
 
-# Assumption testing (sig after FDR adjustment)
+# Multiple Testing Correction
 results.sat$H1m_pval_fdr <- p.adjust(p = results.sat$H1m_pval, method = "fdr")
 results.sat$H2m_pval_fdr <- p.adjust(p = results.sat$H2m_pval, method = "fdr")
 results.sat$H3m_pval_fdr <- p.adjust(p = results.sat$H3m_pval, method = "fdr")
 results.sat$H4m_pval_fdr <- p.adjust(p = results.sat$H4m_pval, method = "fdr")
 results.sat$H5m_pval_fdr <- p.adjust(p = results.sat$H5m_pval, method = "fdr")
-
 results.sat$H1v_pval_fdr <- p.adjust(p = results.sat$H1v_pval, method = "fdr")
 results.sat$H2v_pval_fdr <- p.adjust(p = results.sat$H2v_pval, method = "fdr")
 results.sat$H3v_pval_fdr <- p.adjust(p = results.sat$H3v_pval, method = "fdr")
 results.sat$H4v_pval_fdr <- p.adjust(p = results.sat$H4v_pval, method = "fdr")
 results.sat$H5v_pval_fdr <- p.adjust(p = results.sat$H5v_pval, method = "fdr")
-
 results.sat$H1c_pval_fdr <- p.adjust(p = results.sat$H1c_pval, method = "fdr")
 results.sat$H2c_pval_fdr <- p.adjust(p = results.sat$H2c_pval, method = "fdr")
 results.sat$H3c_pval_fdr <- p.adjust(p = results.sat$H3c_pval, method = "fdr")
 results.sat$H4c_pval_fdr <- p.adjust(p = results.sat$H4c_pval, method = "fdr")
-
-select(results.sat %>% filter(H1m_pval_fdr < 0.05), c(Variable, H1m_pval_fdr, H1m_pval))
-select(results.sat %>% filter(H2m_pval_fdr < 0.05), c(Variable, H2m_pval_fdr, H2m_pval))
-select(results.sat %>% filter(H3m_pval_fdr < 0.05), c(Variable, H3m_pval_fdr, H3m_pval))
-select(results.sat %>% filter(H4m_pval_fdr < 0.05), c(Variable, H4m_pval_fdr, H4m_pval))
-select(results.sat %>% filter(H5m_pval_fdr < 0.05), c(Variable, H5m_pval_fdr, H5m_pval))
-
-select(results.sat %>% filter(H1v_pval_fdr < 0.05), c(Variable, H1v_pval_fdr, H1v_pval))
-select(results.sat %>% filter(H2v_pval_fdr < 0.05), c(Variable, H2v_pval_fdr, H2v_pval))
-select(results.sat %>% filter(H3v_pval_fdr < 0.05), c(Variable, H3v_pval_fdr, H3v_pval))
-select(results.sat %>% filter(H4v_pval_fdr < 0.05), c(Variable, H4v_pval_fdr, H4v_pval))
-select(results.sat %>% filter(H5v_pval_fdr < 0.05), c(Variable, H5v_pval_fdr, H5v_pval))
-
-select(results.sat %>% filter(H1c_pval_fdr < 0.05), c(Variable, H1c_pval_fdr, H1c_pval))
-select(results.sat %>% filter(H2c_pval_fdr < 0.05), c(Variable, H2c_pval_fdr, H2c_pval))
-select(results.sat %>% filter(H3c_pval_fdr < 0.05), c(Variable, H3c_pval_fdr, H3c_pval))
-select(results.sat %>% filter(H4c_pval_fdr < 0.05), c(Variable, H4c_pval_fdr, H4c_pval))
-
-# Covariate effects (sig after FDR adjustment)
 results.sat$NoSex_pval_fdr <- p.adjust(p = results.sat$NoSex_pval, method = "fdr")
 results.sat$NoAge_pval_fdr <- p.adjust(p = results.sat$NoAge_pval, method = "fdr")
 results.sat$NoeTIV_pval_fdr <- p.adjust(p = results.sat$NoeTIV_pval, method = "fdr")
 
-select(results.sat %>% filter(NoSex_pval_fdr < 0.05), c(Variable, sexEstimate, NoSex_pval_fdr))
-select(results.sat %>% filter(NoAge_pval_fdr < 0.05), c(Variable, ageEstimate, NoAge_pval_fdr))
-select(results.sat %>% filter(NoeTIV_pval_fdr < 0.05), c(Variable, eTIVEstimate, NoeTIV_pval_fdr))
-
+# Save Output
 write.csv(results.sat, "3-qtim_saturated_output.csv", row.names = F)
