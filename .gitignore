@@ -54,3 +54,4 @@ rsconnect/
 *.tsv
 data/
 *.pptx
+figure2/figure2_extras.R

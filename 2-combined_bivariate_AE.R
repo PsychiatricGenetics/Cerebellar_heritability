@@ -27,5 +27,5 @@ for (i in list1){
   cb.vars1 <- crossing(i, list2)
   cb.vars2 <- as.list(as.data.frame(t(cb.vars1)))
   results <- lapply(cb.vars2, Bivariate_AE, twin.data = my.data) %>% bind_rows()
-  write.csv(results, paste0("figure2/combined_bivariate_AE_", i, "_output.csv"), row.names = F)
+  write.csv(results, paste0("figure2/2-combined_bivariate_AE_", i, "_output.csv"), row.names = F)
 }

@@ -1,0 +1,30 @@
+Region	Region2	Order
+Left_I_III	Left I-III	1
+Right_I_III	Right I-III	2
+Left_IV	Left IV	3
+Right_IV	Right IV	4
+Left_V	Left V	5
+Right_V	Right V	6
+Left_VI	Left VI	7
+Right_VI	Right VI	8
+Left_Crus_I	Left Crus I	9
+Right_Crus_I	Right Crus I	10
+Left_Crus_II	Left Crus II	11
+Right_Crus_II	Right Crus II	12
+Left_VIIB	Left VIIB	13
+Right_VIIB	Right VIIB	14
+Left_VIIIA	Left VIIIA	15
+Right_VIIIA	Right VIIIA	16
+Left_VIIIB	Left VIIIB	17
+Right_VIIIB	Right VIIIB	18
+Left_IX	Left IX	19
+Right_IX	Right IX	20
+Left_X	Left X	21
+Right_X	Right X	22
+Vermis_VI	Vermis VI	23
+Vermis_VII	Vermis VII	24
+Vermis_VIII	Vermis VIII	25
+Vermis_IX	Vermis IX	26
+Vermis_X	Vermis X	27
+Corpus_Medullare	Corpus Medullare	28
+Total_Cerebel_Vol	Total Cerebellum	29
