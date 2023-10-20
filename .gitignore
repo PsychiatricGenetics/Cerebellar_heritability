@@ -47,6 +47,8 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+# Output/datafiles
 *.csv
 *.RDS
 *.pdf
@@ -54,4 +56,10 @@ rsconnect/
 *.tsv
 data/
 *.pptx
+
+# Folders
 figure2/figure2_extras.R
+qtab_kki
+tables
+test_retest
+TotalCB_covariate
